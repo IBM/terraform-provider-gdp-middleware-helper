@@ -1,77 +1,59 @@
-<!-- This should be the location of the title of the repository, normally the short name -->
-# repo-template
+# GDP Middleware Helper Provider
 
-<!-- Build Status, is a great thing to have at the top of your repository, it shows that you take your CI/CD as first class citizens -->
-<!-- [![Build Status](https://travis-ci.org/jjasghar/ibm-cloud-cli.svg?branch=master)](https://travis-ci.org/jjasghar/ibm-cloud-cli) -->
+## Requirements
 
-<!-- Not always needed, but a scope helps the user understand in a short sentance like below, why this repo exists -->
-## Scope
+- [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
+- [Go](https://golang.org/doc/install) >= 1.23
+- Ensure `go env GOBIN` is set
+  - If not set add `export GOBIN=/Users/<user>/go/bin/` to your bashrc
 
-The purpose of this project is to provide a template for new open source repositories.
+## Building The Provider
 
-<!-- A more detailed Usage or detailed explaination of the repository here -->
-## Usage
+1. Clone the repository
+2. Enter the repository directory
+3. Build the provider using the Go `install` command from the root of the project:
 
-This repository contains some example best practices for open source repositories:
-
-* [LICENSE](LICENSE)
-* [README.md](README.md)
-* [CONTRIBUTING.md](CONTRIBUTING.md)
-* [MAINTAINERS.md](MAINTAINERS.md)
-<!-- A Changelog allows you to track major changes and things that happen, https://github.com/github-changelog-generator/github-changelog-generator can help automate the process -->
-* [CHANGELOG.md](CHANGELOG.md)
-
-> These are optional
-
-<!-- The following are OPTIONAL, but strongly suggested to have in your repository. -->
-* [dco.yml](.github/dco.yml) - This enables DCO bot for you, please take a look https://github.com/probot/dco for more details.
-* [travis.yml](.travis.yml) - This is a example `.travis.yml`, please take a look https://docs.travis-ci.com/user/tutorial/ for more details.
-
-These may be copied into a new or existing project to make it easier for developers not on a project team to collaborate.
-
-<!-- A notes section is useful for anything that isn't covered in the Usage or Scope. Like what we have below. -->
-## Notes
-
-**NOTE: While this boilerplate project uses the Apache 2.0 license, when
-establishing a new repo using this template, please use the
-license that was approved for your project.**
-
-**NOTE: This repository has been configured with the [DCO bot](https://github.com/probot/dco).
-When you set up a new repository that uses the Apache license, you should
-use the DCO to manage contributions. The DCO bot will help enforce that.
-Please contact one of the IBM GH Org stewards.**
-
-<!-- Questions can be useful but optional, this gives you a place to say, "This is how to contact this project maintainers or create PRs -->
-If you have any questions or issues you can create a new [issue here][issues].
-
-Pull requests are very welcome! Make sure your patches are well tested.
-Ideally create a topic branch for every separate change you make. For
-example:
-
-1. Fork the repo
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Added some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
-
-## License
-
-All source files must include a Copyright and License header. The SPDX license header is 
-preferred because it can be easily scanned.
-
-If you would like to see the detailed LICENSE click [here](LICENSE).
-
-```text
-#
-# Copyright IBM Corp. {Year project was created} - {Current Year}
-# SPDX-License-Identifier: Apache-2.0
-#
+```shell
+go install .
 ```
-## Authors
 
-Optionally, you may include a list of authors, though this is redundant with the built-in
-GitHub list of contributors.
+- Add the following to your `$HOME/terraformrc` file 
+```terraformrc
+provider_installation {
 
-- Author: New OpenSource IBMer <new-opensource-ibmer@ibm.com>
+  dev_overrides {
+      "ibm/gdp-middleware-helper" = "/Users/<user>/go/bin"
+  }
 
-[issues]: https://github.com/IBM/repo-template/issues/new
+  # For all other providers, install them directly from their origin provider
+  # registries as normal. If you omit this, Terraform will _only_ use
+  # the dev_overrides block, and so no other providers will be available.
+  direct {}
+}
+```
+
+## Publishing The Provider
+
+### Prerequisites
+1. Ensure you have [goreleaser](https://goreleaser.com/install/) installed
+
+### Building Release Binaries
+1. Test the build process locally:
+   ```shell
+   goreleaser release --snapshot --clean
+   ```
+   > Note: This will build all the binaries and place them in the `dist` directory
+
+### Release Process
+1. Create a git tag from the branch you wish to build:
+   ```shell
+   git tag -a v0.0.1
+   ```
+2. Push this tag to git:
+   ```shell
+   git push origin v0.0.1
+   ```
+3. Run goreleaser to build the binaries with this version:
+   ```shell
+   goreleaser release --snapshot --clean
+   ```
