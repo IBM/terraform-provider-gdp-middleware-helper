@@ -3,12 +3,12 @@
 page_title: "gdp-middleware-helper_rds_postgres_parameter_group Data Source - gdp-middleware-helper"
 subcategory: ""
 description: |-
-  
+  Data source for AWS RDS PostgreSQL parameter group
 ---
 
 # gdp-middleware-helper_rds_postgres_parameter_group (Data Source)
 
-
+Data source for AWS RDS PostgreSQL parameter group
 
 
 

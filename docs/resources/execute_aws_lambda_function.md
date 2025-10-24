@@ -3,12 +3,12 @@
 page_title: "gdp-middleware-helper_execute_aws_lambda_function Resource - gdp-middleware-helper"
 subcategory: ""
 description: |-
-  
+  Executes an AWS Lambda function and returns the result.
 ---
 
 # gdp-middleware-helper_execute_aws_lambda_function (Resource)
 
-
+Executes an AWS Lambda function and returns the result.
 
 
 

@@ -3,12 +3,12 @@
 page_title: "gdp-middleware-helper_docdb_parameter_group Data Source - gdp-middleware-helper"
 subcategory: ""
 description: |-
-  
+  Data source for AWS DocumentDB parameter group
 ---
 
 # gdp-middleware-helper_docdb_parameter_group (Data Source)
 
-
+Data source for AWS DocumentDB parameter group
 
 
 

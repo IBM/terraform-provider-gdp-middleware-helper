@@ -3,12 +3,12 @@
 page_title: "gdp-middleware-helper_rds_mariadb Data Source - gdp-middleware-helper"
 subcategory: ""
 description: |-
-  
+  Data source for AWS RDS MariaDB parameter and option groups
 ---
 
 # gdp-middleware-helper_rds_mariadb (Data Source)
 
-
+Data source for AWS RDS MariaDB parameter and option groups
 
 
 
@@ -31,7 +31,7 @@ description: |-
 - `major_version` (String) RDS MariaDB major version
 - `option_group` (String) RDS MariaDB option group name
 - `option_group_description` (String) RDS MariaDB option group description
-- `options` (List of Object) List of options in the option group (see [below for nested schema](#nestedatt--options))
+- `options` (Attributes List) List of options in the option group (see [below for nested schema](#nestedatt--options))
 - `parameter_group` (String) RDS MariaDB parameter group name
 - `parameter_group_description` (String) RDS MariaDB parameter group description
 
@@ -40,8 +40,8 @@ description: |-
 
 Read-Only:
 
-- `option_description` (String)
-- `option_name` (String)
-- `permanent` (Boolean)
-- `persistent` (Boolean)
-- `port` (Number)
+- `option_description` (String) Description of the option
+- `option_name` (String) Name of the option
+- `permanent` (Boolean) Whether the option is permanent
+- `persistent` (Boolean) Whether the option is persistent
+- `port` (Number) Port associated with the option
