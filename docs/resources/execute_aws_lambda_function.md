@@ -1,3 +1,10 @@
+---
+page_title: "execute_aws_lambda_function Resource"
+subcategory: ""
+description: |-
+  executes an AWS Lambda function and captures the result
+---
+
 # execute_aws_lambda_function Resource
 
 This resource executes an AWS Lambda function and captures the result. It's useful for triggering Lambda functions as part of your Terraform workflow, especially for initialization or configuration tasks.

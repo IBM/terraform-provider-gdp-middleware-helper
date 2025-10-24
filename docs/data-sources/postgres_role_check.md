@@ -1,3 +1,10 @@
+---
+page_title: "guardium-data-postgres_role_check Data Source"
+subcategory: ""
+description: |-
+  This data source checks if a specific role exists in a PostgreSQL database
+---
+
 # postgres_role_check Data Source
 
 This data source checks if a specific role exists in a PostgreSQL database.

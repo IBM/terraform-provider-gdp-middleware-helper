@@ -1,3 +1,9 @@
+---
+page_title: "postgres_provider_check Data Source"
+subcategory: ""
+description: |-
+  This data source checks if a specific PostgreSQL provider/extension exists in a PostgreSQL database.
+---
 # postgres_provider_check Data Source
 
 This data source checks if a specific PostgreSQL provider/extension exists in a PostgreSQL database.
