@@ -1,5 +1,5 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) IBM Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 package provider
 
