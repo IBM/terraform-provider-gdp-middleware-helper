@@ -3,12 +3,12 @@
 page_title: "gdp-middleware-helper_postgres_role_check Data Source - gdp-middleware-helper"
 subcategory: ""
 description: |-
-  
+  Checks if a role exists in PostgreSQL.
 ---
 
 # gdp-middleware-helper_postgres_role_check (Data Source)
 
-
+Checks if a role exists in PostgreSQL.
 
 
 

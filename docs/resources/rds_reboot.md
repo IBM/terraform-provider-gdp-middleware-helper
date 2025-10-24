@@ -3,12 +3,12 @@
 page_title: "gdp-middleware-helper_rds_reboot Resource - gdp-middleware-helper"
 subcategory: ""
 description: |-
-  
+  Resource for rebooting an AWS RDS instance
 ---
 
 # gdp-middleware-helper_rds_reboot (Resource)
 
-
+Resource for rebooting an AWS RDS instance
 
 
 
