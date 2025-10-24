@@ -6,6 +6,7 @@ package provider
 import (
 	"context"
 	"fmt"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/docdb"
@@ -154,7 +155,7 @@ func (d *DocDBParameterGroupDataSource) Read(ctx context.Context, req datasource
 		resp.Diagnostics.AddError(fmt.Sprintf("no family group configured for document db cluster %s", data.ClusterIdentifier.ValueString()), fmt.Sprintf("no family group configured for document db cluster %s", data.ClusterIdentifier.ValueString()))
 		return
 	}
-	
+
 	data.FamilyName = types.StringValue(*pgResp.DBClusterParameterGroups[0].DBParameterGroupFamily)
 	data.Description = types.StringValue(*pgResp.DBClusterParameterGroups[0].Description)
 	data.ID = types.StringValue(data.ClusterIdentifier.ValueString())
