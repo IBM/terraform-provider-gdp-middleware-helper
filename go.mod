@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/docdb v1.46.6
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.77.6
 	github.com/aws/aws-sdk-go-v2/service/rds v1.108.0
-	github.com/hashicorp/terraform-plugin-framework v1.15.1
+	github.com/hashicorp/terraform-plugin-framework v1.16.1
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/jackc/pgx/v5 v5.5.5
 )
