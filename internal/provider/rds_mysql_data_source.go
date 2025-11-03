@@ -1,3 +1,6 @@
+// Copyright (c) IBM Corporation
+// SPDX-License-Identifier: Apache-2.0
+
 package provider
 
 import (
@@ -304,5 +307,3 @@ func (d *RDSMySQLDataSource) Read(ctx context.Context, req datasource.ReadReques
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
-
-// Made with Bob

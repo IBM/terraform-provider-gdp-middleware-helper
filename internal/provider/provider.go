@@ -1,5 +1,5 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) IBM Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 package provider
 
@@ -80,4 +80,3 @@ func New(version string) func() provider.Provider {
 	}
 }
 
-// Made with Bob
