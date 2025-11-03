@@ -59,6 +59,7 @@ func (p *GDPMiddlewareHelperProvider) Resources(ctx context.Context) []func() re
 	return []func() resource.Resource{
 		NewExecuteAwsLambdaFunctionResource,
 		NewRDSRebootResource,
+		NewAuroraRebootResource,
 	}
 }
 
@@ -68,6 +69,7 @@ func (p *GDPMiddlewareHelperProvider) DataSources(ctx context.Context) []func() 
 		NewDocDBParameterGroupDataSource,
 		NewRDSPostgresParameterGroupDataSource,
 		NewRDSMariaDBDataSource,
+		NewAuroraPostgresParameterGroupDataSource,
 	}
 }
 
