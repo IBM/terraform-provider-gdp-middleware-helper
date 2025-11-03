@@ -1,5 +1,5 @@
-// Copyright (c) IBM Corporation
-// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
 
 package provider
 
@@ -68,6 +68,7 @@ func (p *GDPMiddlewareHelperProvider) DataSources(ctx context.Context) []func() 
 		NewDocDBParameterGroupDataSource,
 		NewRDSPostgresParameterGroupDataSource,
 		NewRDSMariaDBDataSource,
+		NewRDSMySQLDataSource,
 	}
 }
 
@@ -78,3 +79,5 @@ func New(version string) func() provider.Provider {
 		}
 	}
 }
+
+// Made with Bob
