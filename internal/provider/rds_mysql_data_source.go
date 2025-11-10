@@ -41,9 +41,9 @@ type MySQLOptionModel struct {
 
 // RDSMySQLDataSourceModel describes the data source data model.
 type RDSMySQLDataSourceModel struct {
-	DBIdentifier   types.String `tfsdk:"db_identifier"`
-	Region         types.String `tfsdk:"region"`
-	ID             types.String `tfsdk:"id"`
+	DBIdentifier types.String `tfsdk:"db_identifier"`
+	Region       types.String `tfsdk:"region"`
+	ID           types.String `tfsdk:"id"`
 
 	// Parameter Group attributes
 	ParameterGroup types.String `tfsdk:"parameter_group"`
