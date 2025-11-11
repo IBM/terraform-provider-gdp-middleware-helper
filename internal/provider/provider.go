@@ -70,6 +70,7 @@ func (p *GDPMiddlewareHelperProvider) DataSources(ctx context.Context) []func() 
 		NewRDSPostgresParameterGroupDataSource,
 		NewRDSMariaDBDataSource,
 		NewAuroraPostgresParameterGroupDataSource,
+		NewRDSMySQLDataSource,
 	}
 }
 
