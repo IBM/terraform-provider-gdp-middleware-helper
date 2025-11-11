@@ -38,14 +38,14 @@ type RDSModifyResource struct {
 
 // RDSModifyResourceModel describes the resource data model.
 type RDSModifyResourceModel struct {
-	DBInstanceIdentifier   frameworktypes.String `tfsdk:"db_instance_identifier"`
-	Region                 frameworktypes.String `tfsdk:"region"`
-	ParameterGroupName     frameworktypes.String `tfsdk:"parameter_group_name"`
-	OptionGroupName        frameworktypes.String `tfsdk:"option_group_name"`
-	CloudWatchLogsExports  frameworktypes.List   `tfsdk:"cloudwatch_logs_exports"`
-	ApplyImmediately       frameworktypes.Bool   `tfsdk:"apply_immediately"`
-	LastModifiedTime       frameworktypes.String `tfsdk:"last_modified_time"`
-	ID                     frameworktypes.String `tfsdk:"id"`
+	DBInstanceIdentifier  frameworktypes.String `tfsdk:"db_instance_identifier"`
+	Region                frameworktypes.String `tfsdk:"region"`
+	ParameterGroupName    frameworktypes.String `tfsdk:"parameter_group_name"`
+	OptionGroupName       frameworktypes.String `tfsdk:"option_group_name"`
+	CloudWatchLogsExports frameworktypes.List   `tfsdk:"cloudwatch_logs_exports"`
+	ApplyImmediately      frameworktypes.Bool   `tfsdk:"apply_immediately"`
+	LastModifiedTime      frameworktypes.String `tfsdk:"last_modified_time"`
+	ID                    frameworktypes.String `tfsdk:"id"`
 }
 
 func (r *RDSModifyResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
