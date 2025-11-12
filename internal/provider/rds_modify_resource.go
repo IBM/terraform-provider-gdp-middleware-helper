@@ -347,6 +347,11 @@ func (r *RDSModifyResource) Update(ctx context.Context, req resource.UpdateReque
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
+func (r *RDSModifyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	// No action needed on delete - this is a stateless operation
+	// The resource will be removed from state
+}
+
 func (r *RDSModifyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("db_instance_identifier"), req, resp)
 }
