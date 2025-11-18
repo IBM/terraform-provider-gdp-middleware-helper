@@ -128,23 +128,23 @@ func (r *AuroraRebootResource) Create(ctx context.Context, req resource.CreateRe
 	describeInput := &rds.DescribeDBClustersInput{
 		DBClusterIdentifier: aws.String(data.ClusterIdentifier.ValueString()),
 	}
-	
+
 	describeResult, err := client.DescribeDBClusters(ctx, describeInput)
 	if err != nil {
 		resp.Diagnostics.AddError("Error describing Aurora cluster", fmt.Sprintf("Could not describe Aurora cluster: %s", err))
 		return
 	}
-	
+
 	if len(describeResult.DBClusters) == 0 {
 		resp.Diagnostics.AddError("Aurora cluster not found", fmt.Sprintf("No Aurora cluster found with identifier: %s", data.ClusterIdentifier.ValueString()))
 		return
 	}
-	
+
 	cluster := describeResult.DBClusters[0]
-	
+
 	// Count total instances in the cluster
 	instanceCount := len(cluster.DBClusterMembers)
-	
+
 	// Check if there are multiple instances (writer + reader)
 	hasReaderInstance := false
 	var readerInstanceID *string
@@ -155,7 +155,7 @@ func (r *AuroraRebootResource) Create(ctx context.Context, req resource.CreateRe
 			break
 		}
 	}
-	
+
 	// Only use failover if:
 	// 1. There are at least 2 instances in the cluster
 	// 2. There's a reader instance available
@@ -163,16 +163,16 @@ func (r *AuroraRebootResource) Create(ctx context.Context, req resource.CreateRe
 	if instanceCount >= 2 && hasReaderInstance && !data.ForceFailover.IsNull() && data.ForceFailover.ValueBool() {
 		// Prepare failover input
 		input := &rds.FailoverDBClusterInput{
-			DBClusterIdentifier:         aws.String(data.ClusterIdentifier.ValueString()),
+			DBClusterIdentifier:        aws.String(data.ClusterIdentifier.ValueString()),
 			TargetDBInstanceIdentifier: readerInstanceID,
 		}
-		
+
 		tflog.Debug(ctx, "Failing over Aurora cluster", map[string]interface{}{
 			"cluster_identifier": data.ClusterIdentifier.ValueString(),
 			"target_instance":    *readerInstanceID,
 			"instance_count":     instanceCount,
 		})
-		
+
 		// Failover the Aurora cluster
 		_, err = client.FailoverDBCluster(ctx, input)
 		if err != nil {
@@ -186,21 +186,21 @@ func (r *AuroraRebootResource) Create(ctx context.Context, req resource.CreateRe
 			"instance_count":     instanceCount,
 			"reason":             "Single instance cluster or force_failover not enabled",
 		})
-		
+
 		for _, member := range cluster.DBClusterMembers {
 			rebootInput := &rds.RebootDBInstanceInput{
 				DBInstanceIdentifier: member.DBInstanceIdentifier,
 			}
-			
+
 			// Don't set ForceFailover for single-instance clusters
 			if instanceCount >= 2 && !data.ForceFailover.IsNull() {
 				rebootInput.ForceFailover = aws.Bool(data.ForceFailover.ValueBool())
 			}
-			
+
 			tflog.Debug(ctx, "Rebooting instance", map[string]interface{}{
 				"instance_identifier": *member.DBInstanceIdentifier,
 			})
-			
+
 			_, err = client.RebootDBInstance(ctx, rebootInput)
 			if err != nil {
 				resp.Diagnostics.AddError("Error rebooting Aurora instance", fmt.Sprintf("Could not reboot Aurora instance %s: %s", *member.DBInstanceIdentifier, err))
@@ -298,23 +298,23 @@ func (r *AuroraRebootResource) Update(ctx context.Context, req resource.UpdateRe
 	describeInput := &rds.DescribeDBClustersInput{
 		DBClusterIdentifier: aws.String(data.ClusterIdentifier.ValueString()),
 	}
-	
+
 	describeResult, err := client.DescribeDBClusters(ctx, describeInput)
 	if err != nil {
 		resp.Diagnostics.AddError("Error describing Aurora cluster", fmt.Sprintf("Could not describe Aurora cluster: %s", err))
 		return
 	}
-	
+
 	if len(describeResult.DBClusters) == 0 {
 		resp.Diagnostics.AddError("Aurora cluster not found", fmt.Sprintf("No Aurora cluster found with identifier: %s", data.ClusterIdentifier.ValueString()))
 		return
 	}
-	
+
 	cluster := describeResult.DBClusters[0]
-	
+
 	// Count total instances in the cluster
 	instanceCount := len(cluster.DBClusterMembers)
-	
+
 	// Check if there are multiple instances (writer + reader)
 	hasReaderInstance := false
 	var readerInstanceID *string
@@ -325,7 +325,7 @@ func (r *AuroraRebootResource) Update(ctx context.Context, req resource.UpdateRe
 			break
 		}
 	}
-	
+
 	// Only use failover if:
 	// 1. There are at least 2 instances in the cluster
 	// 2. There's a reader instance available
@@ -333,16 +333,16 @@ func (r *AuroraRebootResource) Update(ctx context.Context, req resource.UpdateRe
 	if instanceCount >= 2 && hasReaderInstance && !data.ForceFailover.IsNull() && data.ForceFailover.ValueBool() {
 		// Prepare failover input
 		input := &rds.FailoverDBClusterInput{
-			DBClusterIdentifier:         aws.String(data.ClusterIdentifier.ValueString()),
+			DBClusterIdentifier:        aws.String(data.ClusterIdentifier.ValueString()),
 			TargetDBInstanceIdentifier: readerInstanceID,
 		}
-		
+
 		tflog.Debug(ctx, "Failing over Aurora cluster", map[string]interface{}{
 			"cluster_identifier": data.ClusterIdentifier.ValueString(),
 			"target_instance":    *readerInstanceID,
 			"instance_count":     instanceCount,
 		})
-		
+
 		// Failover the Aurora cluster
 		_, err = client.FailoverDBCluster(ctx, input)
 		if err != nil {
@@ -356,21 +356,21 @@ func (r *AuroraRebootResource) Update(ctx context.Context, req resource.UpdateRe
 			"instance_count":     instanceCount,
 			"reason":             "Single instance cluster or force_failover not enabled",
 		})
-		
+
 		for _, member := range cluster.DBClusterMembers {
 			rebootInput := &rds.RebootDBInstanceInput{
 				DBInstanceIdentifier: member.DBInstanceIdentifier,
 			}
-			
+
 			// Don't set ForceFailover for single-instance clusters
 			if instanceCount >= 2 && !data.ForceFailover.IsNull() {
 				rebootInput.ForceFailover = aws.Bool(data.ForceFailover.ValueBool())
 			}
-			
+
 			tflog.Debug(ctx, "Rebooting instance", map[string]interface{}{
 				"instance_identifier": *member.DBInstanceIdentifier,
 			})
-			
+
 			_, err = client.RebootDBInstance(ctx, rebootInput)
 			if err != nil {
 				resp.Diagnostics.AddError("Error rebooting Aurora instance", fmt.Sprintf("Could not reboot Aurora instance %s: %s", *member.DBInstanceIdentifier, err))
@@ -408,4 +408,3 @@ func (r *AuroraRebootResource) Delete(ctx context.Context, req resource.DeleteRe
 func (r *AuroraRebootResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("cluster_identifier"), req, resp)
 }
-

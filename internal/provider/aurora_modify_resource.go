@@ -172,9 +172,9 @@ func (r *AuroraModifyResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	tflog.Debug(ctx, "Modifying Aurora cluster", map[string]interface{}{
-		"cluster_identifier":  data.ClusterIdentifier.ValueString(),
+		"cluster_identifier":   data.ClusterIdentifier.ValueString(),
 		"parameter_group_name": data.ParameterGroupName.ValueString(),
-		"apply_immediately":   data.ApplyImmediately.ValueBool(),
+		"apply_immediately":    data.ApplyImmediately.ValueBool(),
 	})
 
 	// Modify the Aurora cluster
@@ -297,9 +297,9 @@ func (r *AuroraModifyResource) Update(ctx context.Context, req resource.UpdateRe
 	}
 
 	tflog.Debug(ctx, "Modifying Aurora cluster", map[string]interface{}{
-		"cluster_identifier":  data.ClusterIdentifier.ValueString(),
+		"cluster_identifier":   data.ClusterIdentifier.ValueString(),
 		"parameter_group_name": data.ParameterGroupName.ValueString(),
-		"apply_immediately":   data.ApplyImmediately.ValueBool(),
+		"apply_immediately":    data.ApplyImmediately.ValueBool(),
 	})
 
 	// Modify the Aurora cluster
@@ -338,5 +338,3 @@ func (r *AuroraModifyResource) Delete(ctx context.Context, req resource.DeleteRe
 func (r *AuroraModifyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("cluster_identifier"), req, resp)
 }
-
-

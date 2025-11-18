@@ -166,5 +166,3 @@ func (d *AuroraPostgresParameterGroupDataSource) Read(ctx context.Context, req d
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
-
-
