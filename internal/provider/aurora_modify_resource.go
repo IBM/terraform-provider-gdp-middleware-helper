@@ -230,15 +230,50 @@ func (r *AuroraModifyResource) Read(ctx context.Context, req resource.ReadReques
 		client = r.client
 	}
 
-	// Check if the Aurora cluster exists
+	// Describe the Aurora cluster to get current state
 	input := &rds.DescribeDBClustersInput{
 		DBClusterIdentifier: aws.String(data.ClusterIdentifier.ValueString()),
 	}
 
-	_, err := client.DescribeDBClusters(ctx, input)
+	output, err := client.DescribeDBClusters(ctx, input)
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading Aurora cluster", fmt.Sprintf("Could not read Aurora cluster: %s", err))
 		return
+	}
+
+	// Check if cluster was found
+	if len(output.DBClusters) == 0 {
+		resp.Diagnostics.AddError("Aurora cluster not found", fmt.Sprintf("Aurora cluster %s not found", data.ClusterIdentifier.ValueString()))
+		return
+	}
+
+	cluster := output.DBClusters[0]
+
+	// Update state with actual values from AWS
+	data.ClusterIdentifier = frameworktypes.StringValue(aws.ToString(cluster.DBClusterIdentifier))
+	
+	// Update parameter group name if it exists
+	if cluster.DBClusterParameterGroup != nil {
+		data.ParameterGroupName = frameworktypes.StringValue(aws.ToString(cluster.DBClusterParameterGroup))
+	}
+
+	// Update CloudWatch logs exports
+	if len(cluster.EnabledCloudwatchLogsExports) > 0 {
+		logsExports := make([]frameworktypes.String, len(cluster.EnabledCloudwatchLogsExports))
+		for i, logType := range cluster.EnabledCloudwatchLogsExports {
+			logsExports[i] = frameworktypes.StringValue(logType)
+		}
+		listValue, diags := frameworktypes.ListValueFrom(ctx, frameworktypes.StringType, logsExports)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		data.CloudWatchLogsExports = listValue
+	}
+
+	// Set the ID if it's not already set (important for import)
+	if data.ID.IsNull() || data.ID.ValueString() == "" {
+		data.ID = frameworktypes.StringValue(data.ClusterIdentifier.ValueString())
 	}
 
 	// Save updated data into Terraform state

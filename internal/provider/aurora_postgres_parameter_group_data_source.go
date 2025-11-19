@@ -80,12 +80,8 @@ func (d *AuroraPostgresParameterGroupDataSource) Schema(ctx context.Context, req
 func (d *AuroraPostgresParameterGroupDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	tflog.Info(ctx, "Configuring Aurora PostgreSQL parameter group data source")
 
-	// If provider is not configured, return
-	if req.ProviderData == nil {
-		return
-	}
-
-	// Create AWS config and RDS client
+	// Create AWS config and RDS client with default configuration
+	// Region can be overridden per-resource in the Read method
 	awsCfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to load AWS SDK config", fmt.Sprintf("Unable to load AWS SDK config: %s", err))
