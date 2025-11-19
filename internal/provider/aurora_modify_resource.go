@@ -251,7 +251,7 @@ func (r *AuroraModifyResource) Read(ctx context.Context, req resource.ReadReques
 
 	// Update state with actual values from AWS
 	data.ClusterIdentifier = frameworktypes.StringValue(aws.ToString(cluster.DBClusterIdentifier))
-	
+
 	// Update parameter group name if it exists
 	if cluster.DBClusterParameterGroup != nil {
 		data.ParameterGroupName = frameworktypes.StringValue(aws.ToString(cluster.DBClusterParameterGroup))
