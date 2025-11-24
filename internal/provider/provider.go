@@ -62,6 +62,7 @@ func (p *GDPMiddlewareHelperProvider) Resources(ctx context.Context) []func() re
 		NewAuroraRebootResource,
 		NewRDSModifyResource,
 		NewAuroraModifyResource,
+		NewNeptuneModifyResource,
 	}
 }
 
@@ -73,6 +74,7 @@ func (p *GDPMiddlewareHelperProvider) DataSources(ctx context.Context) []func() 
 		NewRDSMariaDBDataSource,
 		NewAuroraPostgresParameterGroupDataSource,
 		NewRDSMySQLDataSource,
+		NewNeptuneParameterGroupDataSource,
 	}
 }
 
