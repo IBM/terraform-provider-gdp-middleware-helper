@@ -148,9 +148,9 @@ func (r *NeptuneRebootResource) Create(ctx context.Context, req resource.CreateR
 	// Reboot each instance in the cluster
 	for _, member := range instances {
 		instanceId := aws.ToString(member.DBInstanceIdentifier)
-		
+
 		tflog.Debug(ctx, "Rebooting Neptune instance", map[string]interface{}{
-			"cluster_identifier": data.ClusterIdentifier.ValueString(),
+			"cluster_identifier":  data.ClusterIdentifier.ValueString(),
 			"instance_identifier": instanceId,
 		})
 
@@ -169,10 +169,10 @@ func (r *NeptuneRebootResource) Create(ctx context.Context, req resource.CreateR
 
 	// Wait for all instances to become available again
 	tflog.Info(ctx, "Waiting for all Neptune instances to become available")
-	
+
 	for _, member := range instances {
 		instanceId := aws.ToString(member.DBInstanceIdentifier)
-		
+
 		waiter := neptune.NewDBInstanceAvailableWaiter(client)
 		waitInput := &neptune.DescribeDBInstancesInput{
 			DBInstanceIdentifier: aws.String(instanceId),
@@ -284,9 +284,9 @@ func (r *NeptuneRebootResource) Update(ctx context.Context, req resource.UpdateR
 	// Reboot each instance in the cluster
 	for _, member := range instances {
 		instanceId := aws.ToString(member.DBInstanceIdentifier)
-		
+
 		tflog.Debug(ctx, "Rebooting Neptune instance", map[string]interface{}{
-			"cluster_identifier": data.ClusterIdentifier.ValueString(),
+			"cluster_identifier":  data.ClusterIdentifier.ValueString(),
 			"instance_identifier": instanceId,
 		})
 
@@ -303,10 +303,10 @@ func (r *NeptuneRebootResource) Update(ctx context.Context, req resource.UpdateR
 
 	// Wait for all instances to become available again
 	tflog.Debug(ctx, "Waiting for all Neptune instances to become available")
-	
+
 	for _, member := range instances {
 		instanceId := aws.ToString(member.DBInstanceIdentifier)
-		
+
 		waiter := neptune.NewDBInstanceAvailableWaiter(client)
 		waitInput := &neptune.DescribeDBInstancesInput{
 			DBInstanceIdentifier: aws.String(instanceId),

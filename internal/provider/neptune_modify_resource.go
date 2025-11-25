@@ -191,23 +191,23 @@ func (r *NeptuneModifyResource) Create(ctx context.Context, req resource.CreateR
 		describeInput := &neptune.DescribeDBClustersInput{
 			DBClusterIdentifier: aws.String(data.ClusterIdentifier.ValueString()),
 		}
-		
+
 		result, err := client.DescribeDBClusters(ctx, describeInput)
 		if err != nil {
 			resp.Diagnostics.AddError("Error describing Neptune cluster", fmt.Sprintf("Could not describe Neptune cluster: %s", err))
 			return
 		}
-		
+
 		if len(result.DBClusters) > 0 && *result.DBClusters[0].Status == "available" {
 			tflog.Info(ctx, "Neptune cluster is now available")
 			break
 		}
-		
+
 		if i == maxAttempts-1 {
 			resp.Diagnostics.AddError("Timeout waiting for Neptune cluster", "Neptune cluster did not become available within 30 minutes")
 			return
 		}
-		
+
 		time.Sleep(30 * time.Second)
 	}
 
@@ -330,23 +330,23 @@ func (r *NeptuneModifyResource) Update(ctx context.Context, req resource.UpdateR
 		describeInput := &neptune.DescribeDBClustersInput{
 			DBClusterIdentifier: aws.String(data.ClusterIdentifier.ValueString()),
 		}
-		
+
 		result, err := client.DescribeDBClusters(ctx, describeInput)
 		if err != nil {
 			resp.Diagnostics.AddError("Error describing Neptune cluster", fmt.Sprintf("Could not describe Neptune cluster: %s", err))
 			return
 		}
-		
+
 		if len(result.DBClusters) > 0 && *result.DBClusters[0].Status == "available" {
 			tflog.Debug(ctx, "Neptune cluster is now available")
 			break
 		}
-		
+
 		if i == maxAttempts-1 {
 			resp.Diagnostics.AddError("Timeout waiting for Neptune cluster", "Neptune cluster did not become available within 30 minutes")
 			return
 		}
-		
+
 		time.Sleep(30 * time.Second)
 	}
 
