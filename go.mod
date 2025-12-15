@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/neptune v1.43.4
 	github.com/aws/aws-sdk-go-v2/service/rds v1.108.8
 	github.com/hashicorp/terraform-plugin-framework v1.15.1
-	github.com/hashicorp/terraform-plugin-log v0.9.0
+	github.com/hashicorp/terraform-plugin-log v0.10.0
 	github.com/jackc/pgx/v5 v5.7.6
 )
 
