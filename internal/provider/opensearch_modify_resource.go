@@ -550,5 +550,3 @@ func (r *OpenSearchModifyResource) Delete(ctx context.Context, req resource.Dele
 func (r *OpenSearchModifyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("domain_name"), req, resp)
 }
-
-// Made with Bob
