@@ -11,16 +11,16 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/opensearch"
-	"github.com/aws/aws-sdk-go-v2/service/opensearch/types"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	frameworktypes "github.com/hashicorp/terraform-plugin-framework/types"
@@ -44,10 +44,6 @@ type OpenSearchModifyResource struct {
 type OpenSearchModifyResourceModel struct {
 	DomainName                       frameworktypes.String `tfsdk:"domain_name"`
 	Region                           frameworktypes.String `tfsdk:"region"`
-	AuditLogsEnabled                 frameworktypes.Bool   `tfsdk:"audit_logs_enabled"`
-	AuditLogsGroupArn                frameworktypes.String `tfsdk:"audit_logs_group_arn"`
-	ProfilerLogsEnabled              frameworktypes.Bool   `tfsdk:"profiler_logs_enabled"`
-	ProfilerLogsGroupArn             frameworktypes.String `tfsdk:"profiler_logs_group_arn"`
 	MasterUsername                   frameworktypes.String `tfsdk:"master_username"`
 	MasterPassword                   frameworktypes.String `tfsdk:"master_password"`
 	EnableSecurityPluginAuditing     frameworktypes.Bool   `tfsdk:"enable_security_plugin_auditing"`
@@ -64,7 +60,7 @@ func (r *OpenSearchModifyResource) Metadata(ctx context.Context, req resource.Me
 func (r *OpenSearchModifyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "Resource for modifying an AWS OpenSearch domain configuration to enable audit logging",
+		MarkdownDescription: "Resource for enabling OpenSearch security plugin auditing",
 
 		Attributes: map[string]schema.Attribute{
 			"domain_name": schema.StringAttribute{
@@ -76,28 +72,6 @@ func (r *OpenSearchModifyResource) Schema(ctx context.Context, req resource.Sche
 			},
 			"region": schema.StringAttribute{
 				MarkdownDescription: "AWS region where the OpenSearch domain is located",
-				Optional:            true,
-			},
-			"audit_logs_enabled": schema.BoolAttribute{
-				MarkdownDescription: "Whether to enable audit logs",
-				Required:            true,
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.RequiresReplace(),
-				},
-			},
-			"audit_logs_group_arn": schema.StringAttribute{
-				MarkdownDescription: "CloudWatch Logs group ARN for audit logs",
-				Required:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"profiler_logs_enabled": schema.BoolAttribute{
-				MarkdownDescription: "Whether to enable profiler logs (INDEX_SLOW_LOGS)",
-				Optional:            true,
-			},
-			"profiler_logs_group_arn": schema.StringAttribute{
-				MarkdownDescription: "CloudWatch Logs group ARN for profiler logs",
 				Optional:            true,
 			},
 			"master_username": schema.StringAttribute{
@@ -163,10 +137,32 @@ type AuditConfig struct {
 	DisabledTransportCategories []string
 }
 
+// normalizeCategories converts category names with spaces to underscores
+// OpenSearch expects categories like "FAILED_LOGIN" not "FAILED LOGIN"
+func normalizeCategories(categories []string) []string {
+	normalized := make([]string, len(categories))
+	for i, cat := range categories {
+		// Replace spaces with underscores and ensure uppercase
+		normalized[i] = strings.ReplaceAll(strings.ToUpper(strings.TrimSpace(cat)), " ", "_")
+	}
+	return normalized
+}
+
 // enableSecurityPluginAuditing enables audit logging via OpenSearch Security API
 func enableSecurityPluginAuditing(ctx context.Context, endpoint, username, password string, config AuditConfig) error {
 	// Construct the security API URL
 	url := fmt.Sprintf("https://%s/_plugins/_security/api/audit/config", endpoint)
+
+	// Normalize category names (replace spaces with underscores)
+	normalizedRestCategories := normalizeCategories(config.DisabledRestCategories)
+	normalizedTransportCategories := normalizeCategories(config.DisabledTransportCategories)
+
+	tflog.Debug(ctx, "Normalized audit categories", map[string]interface{}{
+		"original_rest_categories":      config.DisabledRestCategories,
+		"normalized_rest_categories":    normalizedRestCategories,
+		"original_transport_categories": config.DisabledTransportCategories,
+		"normalized_transport_categories": normalizedTransportCategories,
+	})
 
 	// Audit configuration with hardcoded best-practice settings
 	// Only disabled categories are configurable
@@ -174,14 +170,14 @@ func enableSecurityPluginAuditing(ctx context.Context, endpoint, username, passw
 		"enabled": true,
 		"audit": map[string]interface{}{
 			"enable_rest":                   true,
-			"disabled_rest_categories":      config.DisabledRestCategories,
+			"disabled_rest_categories":      normalizedRestCategories,
 			"enable_transport":              true,
-			"disabled_transport_categories": config.DisabledTransportCategories,
+			"disabled_transport_categories": normalizedTransportCategories,
 			"resolve_bulk_requests":         true,
 			"log_request_body":              true,
 			"resolve_indices":               true,
 			"exclude_sensitive_headers":     true,
-			"ignore_users":                  []string{"kibanaserver"},
+			"ignore_users":                  []string{},
 			"ignore_requests":               []string{},
 		},
 		"compliance": map[string]interface{}{
@@ -190,11 +186,11 @@ func enableSecurityPluginAuditing(ctx context.Context, endpoint, username, passw
 			"external_config":       false,
 			"read_metadata_only":    true,
 			"read_watched_fields":   map[string]interface{}{},
-			"read_ignore_users":     []string{"kibanaserver"},
+			"read_ignore_users":     []string{},
 			"write_metadata_only":   true,
 			"write_log_diffs":       false,
 			"write_watched_indices": []string{},
-			"write_ignore_users":    []string{"kibanaserver"},
+			"write_ignore_users":    []string{},
 		},
 	}
 
@@ -202,6 +198,10 @@ func enableSecurityPluginAuditing(ctx context.Context, endpoint, username, passw
 	if err != nil {
 		return fmt.Errorf("failed to marshal audit config: %w", err)
 	}
+
+	tflog.Debug(ctx, "Audit config JSON payload", map[string]interface{}{
+		"payload": string(jsonData),
+	})
 
 	// Create HTTP client with TLS config
 	tr := &http.Transport{
@@ -251,157 +251,135 @@ func (r *OpenSearchModifyResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	// If region is specified, update the AWS config
-	var client *opensearch.Client
-	if !data.Region.IsNull() {
-		tflog.Debug(ctx, "configuring client with region")
-		awsCfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(data.Region.ValueString()))
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to load AWS SDK config", fmt.Sprintf("Unable to load AWS SDK config with region %s: %s", data.Region.ValueString(), err))
-			return
-		}
-		client = opensearch.NewFromConfig(awsCfg)
-	} else {
-		tflog.Debug(ctx, "using default client")
-		client = r.client
-	}
-
-	// Prepare log publishing options
-	logPublishingOptions := make(map[string]types.LogPublishingOption)
-
-	// Add audit logs configuration
-	if data.AuditLogsEnabled.ValueBool() {
-		logPublishingOptions["AUDIT_LOGS"] = types.LogPublishingOption{
-			CloudWatchLogsLogGroupArn: aws.String(data.AuditLogsGroupArn.ValueString()),
-			Enabled:                   aws.Bool(true),
-		}
-	}
-
-	// Add profiler logs configuration if enabled
-	if !data.ProfilerLogsEnabled.IsNull() && data.ProfilerLogsEnabled.ValueBool() {
-		if !data.ProfilerLogsGroupArn.IsNull() {
-			logPublishingOptions["INDEX_SLOW_LOGS"] = types.LogPublishingOption{
-				CloudWatchLogsLogGroupArn: aws.String(data.ProfilerLogsGroupArn.ValueString()),
-				Enabled:                   aws.Bool(true),
-			}
-		}
-	}
-
-	// Prepare update input
-	input := &opensearch.UpdateDomainConfigInput{
-		DomainName:           aws.String(data.DomainName.ValueString()),
-		LogPublishingOptions: logPublishingOptions,
-	}
-
-	tflog.Debug(ctx, "Updating OpenSearch domain configuration", map[string]interface{}{
-		"domain_name":         data.DomainName.ValueString(),
-		"audit_logs_enabled":  data.AuditLogsEnabled.ValueBool(),
-		"profiler_logs_enabled": data.ProfilerLogsEnabled.ValueBool(),
-	})
-
-	// Update the OpenSearch domain
-	_, err := client.UpdateDomainConfig(ctx, input)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating OpenSearch domain", fmt.Sprintf("Could not update OpenSearch domain: %s", err))
+	// Process the domain modification
+	r.processDomainModification(ctx, &data, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Wait for the domain to finish processing using polling
-	tflog.Info(ctx, "Waiting for OpenSearch domain to finish processing")
-	maxAttempts := 60 // 30 minutes with 30 second intervals
-	var domainEndpoint string
-	for i := 0; i < maxAttempts; i++ {
-		describeInput := &opensearch.DescribeDomainInput{
-			DomainName: aws.String(data.DomainName.ValueString()),
-		}
+	// Set computed values
+	data.LastModifiedTime = frameworktypes.StringValue(time.Now().Format(time.RFC3339))
+	data.ID = frameworktypes.StringValue(data.DomainName.ValueString())
 
-		result, err := client.DescribeDomain(ctx, describeInput)
+	// Save data into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+// getClient returns an OpenSearch client, optionally configured with a specific region
+func (r *OpenSearchModifyResource) getClient(ctx context.Context, region frameworktypes.String, diags *diag.Diagnostics) *opensearch.Client {
+	if !region.IsNull() {
+		tflog.Debug(ctx, "Configuring client with region", map[string]interface{}{"region": region.ValueString()})
+		awsCfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region.ValueString()))
 		if err != nil {
-			resp.Diagnostics.AddError("Error describing OpenSearch domain", fmt.Sprintf("Could not describe OpenSearch domain: %s", err))
-			return
+			diags.AddError("Unable to load AWS SDK config", fmt.Sprintf("Unable to load AWS SDK config with region %s: %s", region.ValueString(), err))
+			return nil
+		}
+		return opensearch.NewFromConfig(awsCfg)
+	}
+	tflog.Debug(ctx, "Using default client")
+	return r.client
+}
+
+// waitForDomainReady waits for the OpenSearch domain to finish processing and returns its endpoint
+func (r *OpenSearchModifyResource) waitForDomainReady(ctx context.Context, client *opensearch.Client, domainName string, diags *diag.Diagnostics) string {
+	tflog.Info(ctx, "Waiting for OpenSearch domain to finish processing")
+	maxAttempts := 120 // 30 minutes with 15 second intervals
+
+	for i := 0; i < maxAttempts; i++ {
+		result, err := client.DescribeDomain(ctx, &opensearch.DescribeDomainInput{
+			DomainName: aws.String(domainName),
+		})
+		if err != nil {
+			diags.AddError("Error describing OpenSearch domain", fmt.Sprintf("Could not describe OpenSearch domain: %s", err))
+			return ""
 		}
 
 		if result.DomainStatus != nil && result.DomainStatus.Processing != nil && !*result.DomainStatus.Processing {
-			tflog.Info(ctx, "OpenSearch domain is no longer processing")
-			// Capture the endpoint for security plugin configuration
+			tflog.Info(ctx, "OpenSearch domain is ready")
 			if result.DomainStatus.Endpoint != nil {
-				domainEndpoint = *result.DomainStatus.Endpoint
+				return *result.DomainStatus.Endpoint
 			}
 			break
 		}
 
 		if i == maxAttempts-1 {
-			resp.Diagnostics.AddError("Timeout waiting for OpenSearch domain", "OpenSearch domain did not finish processing within 30 minutes")
+			diags.AddError("Timeout waiting for OpenSearch domain", "OpenSearch domain did not finish processing within 30 minutes")
+			return ""
+		}
+
+		time.Sleep(15 * time.Second)
+	}
+
+	return ""
+}
+
+// enableSecurityAuditing enables OpenSearch security plugin auditing if configured
+func (r *OpenSearchModifyResource) enableSecurityAuditing(ctx context.Context, data *OpenSearchModifyResourceModel, domainEndpoint string, diags *diag.Diagnostics) {
+	if data.EnableSecurityPluginAuditing.IsNull() || !data.EnableSecurityPluginAuditing.ValueBool() {
+		return
+	}
+
+	if data.MasterUsername.IsNull() || data.MasterPassword.IsNull() || domainEndpoint == "" {
+		diags.AddWarning(
+			"Security plugin auditing not enabled",
+			"enable_security_plugin_auditing is true but master_username, master_password, or domain endpoint is missing",
+		)
+		return
+	}
+
+	tflog.Info(ctx, "Enabling OpenSearch security plugin auditing")
+
+	// Extract disabled categories
+	var disabledRestCategories []string
+	if !data.AuditRestDisabledCategories.IsNull() {
+		if diagsTemp := data.AuditRestDisabledCategories.ElementsAs(ctx, &disabledRestCategories, false); diagsTemp.HasError() {
+			diags.Append(diagsTemp...)
 			return
 		}
-
-		time.Sleep(30 * time.Second)
 	}
 
-	// Enable security plugin auditing if requested and credentials provided
-	if !data.EnableSecurityPluginAuditing.IsNull() && data.EnableSecurityPluginAuditing.ValueBool() {
-		if !data.MasterUsername.IsNull() && !data.MasterPassword.IsNull() && domainEndpoint != "" {
-			tflog.Info(ctx, "Enabling OpenSearch security plugin auditing")
-			
-			// Extract disabled REST categories from the list
-			var disabledRestCategories []string
-			if !data.AuditRestDisabledCategories.IsNull() {
-				diags := data.AuditRestDisabledCategories.ElementsAs(ctx, &disabledRestCategories, false)
-				if diags.HasError() {
-					resp.Diagnostics.Append(diags...)
-					return
-				}
-			}
-			
-			// Extract disabled Transport categories from the list
-			var disabledTransportCategories []string
-			if !data.AuditDisabledTransportCategories.IsNull() {
-				diags := data.AuditDisabledTransportCategories.ElementsAs(ctx, &disabledTransportCategories, false)
-				if diags.HasError() {
-					resp.Diagnostics.Append(diags...)
-					return
-				}
-			}
-			
-			// Build audit configuration (only disabled categories are configurable)
-			auditConfig := AuditConfig{
-				DisabledRestCategories:      disabledRestCategories,
-				DisabledTransportCategories: disabledTransportCategories,
-			}
-			
-			tflog.Debug(ctx, "Audit configuration", map[string]interface{}{
-				"disabled_rest_categories":      auditConfig.DisabledRestCategories,
-				"disabled_transport_categories": auditConfig.DisabledTransportCategories,
-			})
-			
-			err := enableSecurityPluginAuditing(
-				ctx,
-				domainEndpoint,
-				data.MasterUsername.ValueString(),
-				data.MasterPassword.ValueString(),
-				auditConfig,
-			)
-			if err != nil {
-				resp.Diagnostics.AddWarning(
-					"Failed to enable security plugin auditing",
-					fmt.Sprintf("CloudWatch logging is enabled, but failed to enable security plugin auditing: %s. You may need to enable it manually via the OpenSearch Dashboard.", err),
-				)
-			}
-		} else {
-			resp.Diagnostics.AddWarning(
-				"Security plugin auditing not enabled",
-				"enable_security_plugin_auditing is true but master_username, master_password, or domain endpoint is missing",
-			)
+	var disabledTransportCategories []string
+	if !data.AuditDisabledTransportCategories.IsNull() {
+		if diagsTemp := data.AuditDisabledTransportCategories.ElementsAs(ctx, &disabledTransportCategories, false); diagsTemp.HasError() {
+			diags.Append(diagsTemp...)
+			return
 		}
 	}
 
-	// Set computed values
-	currentTime := time.Now().Format(time.RFC3339)
-	data.LastModifiedTime = frameworktypes.StringValue(currentTime)
-	data.ID = frameworktypes.StringValue(data.DomainName.ValueString())
+	auditConfig := AuditConfig{
+		DisabledRestCategories:      disabledRestCategories,
+		DisabledTransportCategories: disabledTransportCategories,
+	}
 
-	// Save data into Terraform state
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	tflog.Debug(ctx, "Audit configuration", map[string]interface{}{
+		"disabled_rest_categories":      auditConfig.DisabledRestCategories,
+		"disabled_transport_categories": auditConfig.DisabledTransportCategories,
+	})
+
+	if err := enableSecurityPluginAuditing(ctx, domainEndpoint, data.MasterUsername.ValueString(), data.MasterPassword.ValueString(), auditConfig); err != nil {
+		diags.AddWarning(
+			"Failed to enable security plugin auditing",
+			fmt.Sprintf("Failed to enable security plugin auditing: %s. You may need to enable it manually via the OpenSearch Dashboard.", err),
+		)
+	}
+}
+
+// processDomainModification handles the common logic for Create and Update operations
+func (r *OpenSearchModifyResource) processDomainModification(ctx context.Context, data *OpenSearchModifyResourceModel, diags *diag.Diagnostics) {
+	// Get AWS client with optional region override
+	client := r.getClient(ctx, data.Region, diags)
+	if diags.HasError() {
+		return
+	}
+
+	// Wait for domain to be ready and get endpoint
+	domainEndpoint := r.waitForDomainReady(ctx, client, data.DomainName.ValueString(), diags)
+	if diags.HasError() {
+		return
+	}
+
+	// Enable security plugin auditing if requested
+	r.enableSecurityAuditing(ctx, data, domainEndpoint, diags)
 }
 
 func (r *OpenSearchModifyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -413,19 +391,10 @@ func (r *OpenSearchModifyResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	// If region is specified, update the AWS config
-	var client *opensearch.Client
-	if !data.Region.IsNull() {
-		tflog.Debug(ctx, "configuring client with region")
-		awsCfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(data.Region.ValueString()))
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to load AWS SDK config", fmt.Sprintf("Unable to load AWS SDK config with region %s: %s", data.Region.ValueString(), err))
-			return
-		}
-		client = opensearch.NewFromConfig(awsCfg)
-	} else {
-		tflog.Debug(ctx, "using default client")
-		client = r.client
+	// Get AWS client with optional region override
+	client := r.getClient(ctx, data.Region, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	// Check if the OpenSearch domain exists
@@ -452,91 +421,14 @@ func (r *OpenSearchModifyResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 
-	// If region is specified, update the AWS config
-	var client *opensearch.Client
-	if !data.Region.IsNull() {
-		tflog.Debug(ctx, "configuring client with region")
-		awsCfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(data.Region.ValueString()))
-		if err != nil {
-			resp.Diagnostics.AddError("Unable to load AWS SDK config", fmt.Sprintf("Unable to load AWS SDK config with region %s: %s", data.Region.ValueString(), err))
-			return
-		}
-		client = opensearch.NewFromConfig(awsCfg)
-	} else {
-		tflog.Debug(ctx, "using default client")
-		client = r.client
-	}
-
-	// Prepare log publishing options
-	logPublishingOptions := make(map[string]types.LogPublishingOption)
-
-	// Add audit logs configuration
-	if data.AuditLogsEnabled.ValueBool() {
-		logPublishingOptions["AUDIT_LOGS"] = types.LogPublishingOption{
-			CloudWatchLogsLogGroupArn: aws.String(data.AuditLogsGroupArn.ValueString()),
-			Enabled:                   aws.Bool(true),
-		}
-	}
-
-	// Add profiler logs configuration if enabled
-	if !data.ProfilerLogsEnabled.IsNull() && data.ProfilerLogsEnabled.ValueBool() {
-		if !data.ProfilerLogsGroupArn.IsNull() {
-			logPublishingOptions["INDEX_SLOW_LOGS"] = types.LogPublishingOption{
-				CloudWatchLogsLogGroupArn: aws.String(data.ProfilerLogsGroupArn.ValueString()),
-				Enabled:                   aws.Bool(true),
-			}
-		}
-	}
-
-	// Prepare update input
-	input := &opensearch.UpdateDomainConfigInput{
-		DomainName:           aws.String(data.DomainName.ValueString()),
-		LogPublishingOptions: logPublishingOptions,
-	}
-
-	tflog.Debug(ctx, "Updating OpenSearch domain configuration", map[string]interface{}{
-		"domain_name":           data.DomainName.ValueString(),
-		"audit_logs_enabled":    data.AuditLogsEnabled.ValueBool(),
-		"profiler_logs_enabled": data.ProfilerLogsEnabled.ValueBool(),
-	})
-
-	// Update the OpenSearch domain
-	_, err := client.UpdateDomainConfig(ctx, input)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating OpenSearch domain", fmt.Sprintf("Could not update OpenSearch domain: %s", err))
+	// Process the domain modification
+	r.processDomainModification(ctx, &data, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Wait for the domain to finish processing using polling
-	tflog.Debug(ctx, "Waiting for OpenSearch domain to finish processing")
-	maxAttempts := 60 // 30 minutes with 30 second intervals
-	for i := 0; i < maxAttempts; i++ {
-		describeInput := &opensearch.DescribeDomainInput{
-			DomainName: aws.String(data.DomainName.ValueString()),
-		}
-
-		result, err := client.DescribeDomain(ctx, describeInput)
-		if err != nil {
-			resp.Diagnostics.AddError("Error describing OpenSearch domain", fmt.Sprintf("Could not describe OpenSearch domain: %s", err))
-			return
-		}
-
-		if result.DomainStatus != nil && result.DomainStatus.Processing != nil && !*result.DomainStatus.Processing {
-			tflog.Debug(ctx, "OpenSearch domain is no longer processing")
-			break
-		}
-
-		if i == maxAttempts-1 {
-			resp.Diagnostics.AddError("Timeout waiting for OpenSearch domain", "OpenSearch domain did not finish processing within 30 minutes")
-			return
-		}
-
-		time.Sleep(30 * time.Second)
-	}
-
 	// Set computed values
-	currentTime := time.Now().Format(time.RFC3339)
-	data.LastModifiedTime = frameworktypes.StringValue(currentTime)
+	data.LastModifiedTime = frameworktypes.StringValue(time.Now().Format(time.RFC3339))
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
