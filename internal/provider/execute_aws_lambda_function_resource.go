@@ -224,15 +224,15 @@ func executeLambdaFunction(ctx context.Context, functionName, region string) (bo
 
 	// Format the result for output
 	var formattedResult strings.Builder
-	formattedResult.WriteString(fmt.Sprintf("StatusCode: %d\n", lrp.StatusCode))
+	fmt.Fprintf(&formattedResult, "StatusCode: %d\n", lrp.StatusCode)
 
 	if result.FunctionError != nil {
-		formattedResult.WriteString(fmt.Sprintf("FunctionError: %s\n", *result.FunctionError))
+		fmt.Fprintf(&formattedResult, "FunctionError: %s\n", *result.FunctionError)
 	}
 
-	formattedResult.WriteString(fmt.Sprintf("ExecutedVersion: %s\n", aws.ToString(result.ExecutedVersion)))
-	formattedResult.WriteString(fmt.Sprintf("Payload: %s\n", responsePayload))
-	formattedResult.WriteString(fmt.Sprintf("\nFormatted Payload:\n%s\n", string(result.Payload)))
+	fmt.Fprintf(&formattedResult, "ExecutedVersion: %s\n", aws.ToString(result.ExecutedVersion))
+	fmt.Fprintf(&formattedResult, "Payload: %s\n", responsePayload)
+	fmt.Fprintf(&formattedResult, "\nFormatted Payload:\n%s\n", string(result.Payload))
 
 	// Check if the function executed successfully
 	success := lrp.StatusCode >= 200 && lrp.StatusCode < 300 && result.FunctionError == nil

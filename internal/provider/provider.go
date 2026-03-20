@@ -64,6 +64,7 @@ func (p *GDPMiddlewareHelperProvider) Resources(ctx context.Context) []func() re
 		NewRDSModifyResource,
 		NewAuroraModifyResource,
 		NewNeptuneModifyResource,
+		NewOpenSearchModifyResource,
 	}
 }
 
