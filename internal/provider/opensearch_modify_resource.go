@@ -158,10 +158,10 @@ func enableSecurityPluginAuditing(ctx context.Context, endpoint, username, passw
 	normalizedTransportCategories := normalizeCategories(config.DisabledTransportCategories)
 
 	tflog.Debug(ctx, "Normalized audit categories", map[string]interface{}{
-		"original_rest_categories":          config.DisabledRestCategories,
-		"normalized_rest_categories":        normalizedRestCategories,
-		"original_transport_categories":     config.DisabledTransportCategories,
-		"normalized_transport_categories":   normalizedTransportCategories,
+		"original_rest_categories":       config.DisabledRestCategories,
+		"normalized_rest_categories":     normalizedRestCategories,
+		"original_transport_categories":  config.DisabledTransportCategories,
+		"normalized_transport_categories": normalizedTransportCategories,
 	})
 
 	// Audit configuration with hardcoded best-practice settings
