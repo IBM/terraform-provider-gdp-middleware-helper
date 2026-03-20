@@ -228,7 +228,10 @@ func enableSecurityPluginAuditing(ctx context.Context, endpoint, username, passw
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
@@ -299,7 +302,8 @@ func (r *OpenSearchModifyResource) waitForDomainReady(ctx context.Context, clien
 			if result.DomainStatus.Endpoint != nil {
 				return *result.DomainStatus.Endpoint
 			}
-			break
+			diags.AddWarning("OpenSearch domain ready but endpoint not available", "Domain finished processing but endpoint is not set")
+			return ""
 		}
 
 		if i == maxAttempts-1 {
