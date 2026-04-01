@@ -1,6 +1,6 @@
 module terraform-provider-gdp-middleware-helper
 
-go 1.23.7
+go 1.24.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.40.0
@@ -8,9 +8,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/docdb v1.48.2
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.81.2
 	github.com/aws/aws-sdk-go-v2/service/neptune v1.43.4
+	github.com/aws/aws-sdk-go-v2/service/opensearch v1.30.0
 	github.com/aws/aws-sdk-go-v2/service/rds v1.108.8
 	github.com/hashicorp/terraform-plugin-framework v1.15.1
-	github.com/hashicorp/terraform-plugin-log v0.9.0
+	github.com/hashicorp/terraform-plugin-log v0.10.0
 	github.com/jackc/pgx/v5 v5.7.6
 )
 
@@ -23,7 +24,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.14 // indirect
-	github.com/aws/aws-sdk-go-v2/service/opensearch v1.30.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.30.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.40.1 // indirect
