@@ -59,7 +59,9 @@ func (p *GDPMiddlewareHelperProvider) Resources(ctx context.Context) []func() re
 	return []func() resource.Resource{
 		NewExecuteAwsLambdaFunctionResource,
 		NewRDSModifyResource,
+		NewRDSRebootResource,
 		NewAuroraModifyResource,
+		NewAuroraRebootResource,
 		NewNeptuneModifyResource,
 		NewOpenSearchModifyResource,
 	}
