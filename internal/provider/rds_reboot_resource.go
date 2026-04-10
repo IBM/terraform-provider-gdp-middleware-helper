@@ -204,7 +204,7 @@ func (r *RDSRebootResource) Create(ctx context.Context, req resource.CreateReque
 	})
 
 	// Reboot the RDS instance
-	_, err := client.RebootDBInstance(ctx, input)
+	_, err = client.RebootDBInstance(ctx, input)
 	if err != nil {
 		resp.Diagnostics.AddError("Error rebooting RDS instance", fmt.Sprintf("Could not reboot RDS instance: %s", err))
 		return
@@ -374,7 +374,7 @@ func (r *RDSRebootResource) Update(ctx context.Context, req resource.UpdateReque
 	})
 
 	// Reboot the RDS instance
-	_, err := client.RebootDBInstance(ctx, input)
+	_, err = client.RebootDBInstance(ctx, input)
 	if err != nil {
 		resp.Diagnostics.AddError("Error rebooting RDS instance", fmt.Sprintf("Could not reboot RDS instance: %s", err))
 		return
