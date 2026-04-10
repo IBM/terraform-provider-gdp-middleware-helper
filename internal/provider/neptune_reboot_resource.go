@@ -145,6 +145,45 @@ func (r *NeptuneRebootResource) Create(ctx context.Context, req resource.CreateR
 
 	tflog.Info(ctx, fmt.Sprintf("Found %d instances in Neptune cluster %s", len(instances), data.ClusterIdentifier.ValueString()))
 
+	// Check if audit logging is already enabled by examining the parameter group
+	parameterGroupName := aws.ToString(cluster.DBClusterParameterGroup)
+	if parameterGroupName != "" {
+		tflog.Debug(ctx, fmt.Sprintf("Checking parameter group %s for audit logging status", parameterGroupName))
+		
+		describeParamsInput := &neptune.DescribeDBClusterParametersInput{
+			DBClusterParameterGroupName: aws.String(parameterGroupName),
+		}
+
+		paramsOutput, err := client.DescribeDBClusterParameters(ctx, describeParamsInput)
+		if err != nil {
+			tflog.Warn(ctx, fmt.Sprintf("Could not describe cluster parameters: %s. Proceeding with reboot.", err))
+		} else {
+			// Check if neptune_enable_audit_log is already set to 1
+			auditEnabled := false
+			for _, param := range paramsOutput.Parameters {
+				if aws.ToString(param.ParameterName) == "neptune_enable_audit_log" {
+					if aws.ToString(param.ParameterValue) == "1" {
+						auditEnabled = true
+						tflog.Info(ctx, "Audit logging is already enabled (neptune_enable_audit_log=1)")
+					}
+					break
+				}
+			}
+
+			if auditEnabled {
+				tflog.Info(ctx, "Skipping reboot as audit logging is already enabled")
+				// Set computed values without rebooting
+				currentTime := time.Now().Format(time.RFC3339)
+				data.LastRebootTime = types.StringValue(currentTime)
+				data.ID = types.StringValue(data.ClusterIdentifier.ValueString())
+				
+				// Save data into Terraform state
+				resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+				return
+			}
+		}
+	}
+
 	// Reboot each instance in the cluster
 	for _, member := range instances {
 		instanceId := aws.ToString(member.DBInstanceIdentifier)
@@ -280,6 +319,44 @@ func (r *NeptuneRebootResource) Update(ctx context.Context, req resource.UpdateR
 
 	cluster := clusterOutput.DBClusters[0]
 	instances := cluster.DBClusterMembers
+
+	// Check if audit logging is already enabled by examining the parameter group
+	parameterGroupName := aws.ToString(cluster.DBClusterParameterGroup)
+	if parameterGroupName != "" {
+		tflog.Debug(ctx, fmt.Sprintf("Checking parameter group %s for audit logging status", parameterGroupName))
+		
+		describeParamsInput := &neptune.DescribeDBClusterParametersInput{
+			DBClusterParameterGroupName: aws.String(parameterGroupName),
+		}
+
+		paramsOutput, err := client.DescribeDBClusterParameters(ctx, describeParamsInput)
+		if err != nil {
+			tflog.Warn(ctx, fmt.Sprintf("Could not describe cluster parameters: %s. Proceeding with reboot.", err))
+		} else {
+			// Check if neptune_enable_audit_log is already set to 1
+			auditEnabled := false
+			for _, param := range paramsOutput.Parameters {
+				if aws.ToString(param.ParameterName) == "neptune_enable_audit_log" {
+					if aws.ToString(param.ParameterValue) == "1" {
+						auditEnabled = true
+						tflog.Info(ctx, "Audit logging is already enabled (neptune_enable_audit_log=1)")
+					}
+					break
+				}
+			}
+
+			if auditEnabled {
+				tflog.Info(ctx, "Skipping reboot as audit logging is already enabled")
+				// Set computed values without rebooting
+				currentTime := time.Now().Format(time.RFC3339)
+				data.LastRebootTime = types.StringValue(currentTime)
+				
+				// Save data into Terraform state
+				resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+				return
+			}
+		}
+	}
 
 	// Reboot each instance in the cluster
 	for _, member := range instances {
