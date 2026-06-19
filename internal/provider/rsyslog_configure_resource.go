@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/crypto/ssh"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -16,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	frameworktypes "github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"golang.org/x/crypto/ssh"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -31,17 +31,17 @@ type RsyslogConfigureResource struct{}
 
 // RsyslogConfigureResourceModel describes the resource data model.
 type RsyslogConfigureResourceModel struct {
-	Host          frameworktypes.String `tfsdk:"host"`
-	Port          frameworktypes.Int64  `tfsdk:"port"`
-	Username      frameworktypes.String `tfsdk:"username"`
-	Password      frameworktypes.String `tfsdk:"password"`
-	LogFilePath   frameworktypes.String `tfsdk:"log_file_path"`
-	LogTag        frameworktypes.String `tfsdk:"log_tag"`
-	LogstashHost  frameworktypes.String `tfsdk:"logstash_host"`
-	LogstashPort  frameworktypes.String `tfsdk:"logstash_port"`
-	Facility      frameworktypes.String `tfsdk:"facility"`
-	ConfiguredAt  frameworktypes.String `tfsdk:"configured_at"`
-	ID            frameworktypes.String `tfsdk:"id"`
+	Host         frameworktypes.String `tfsdk:"host"`
+	Port         frameworktypes.Int64  `tfsdk:"port"`
+	Username     frameworktypes.String `tfsdk:"username"`
+	Password     frameworktypes.String `tfsdk:"password"`
+	LogFilePath  frameworktypes.String `tfsdk:"log_file_path"`
+	LogTag       frameworktypes.String `tfsdk:"log_tag"`
+	LogstashHost frameworktypes.String `tfsdk:"logstash_host"`
+	LogstashPort frameworktypes.String `tfsdk:"logstash_port"`
+	Facility     frameworktypes.String `tfsdk:"facility"`
+	ConfiguredAt frameworktypes.String `tfsdk:"configured_at"`
+	ID           frameworktypes.String `tfsdk:"id"`
 }
 
 func (r *RsyslogConfigureResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -165,7 +165,7 @@ $InputRunFileMonitor
 # Forward to Logstash on Guardium server (UDP)
 %s.* @%s:%s
 `, data.LogTag.ValueString(), data.LogFilePath.ValueString(), data.LogTag.ValueString(),
-   data.LogTag.ValueString(), facility, facility, data.LogstashHost.ValueString(), data.LogstashPort.ValueString())
+		data.LogTag.ValueString(), facility, facility, data.LogstashHost.ValueString(), data.LogstashPort.ValueString())
 
 	// Execute commands to configure rsyslog
 	commands := []string{

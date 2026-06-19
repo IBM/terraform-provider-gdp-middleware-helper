@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/crypto/ssh"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -16,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	frameworktypes "github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"golang.org/x/crypto/ssh"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces

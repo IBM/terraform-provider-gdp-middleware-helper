@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/crypto/ssh"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -16,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	frameworktypes "github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"golang.org/x/crypto/ssh"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -31,16 +31,16 @@ type FilebeatConfigureResource struct{}
 
 // FilebeatConfigureResourceModel describes the resource data model.
 type FilebeatConfigureResourceModel struct {
-	Host             frameworktypes.String `tfsdk:"host"`
-	Port             frameworktypes.Int64  `tfsdk:"port"`
-	Username         frameworktypes.String `tfsdk:"username"`
-	Password         frameworktypes.String `tfsdk:"password"`
-	AuditLogPath     frameworktypes.String `tfsdk:"audit_log_path"`
-	DatasourceTag    frameworktypes.String `tfsdk:"datasource_tag"`
-	LogstashHost     frameworktypes.String `tfsdk:"logstash_host"`
-	LogstashPort     frameworktypes.String `tfsdk:"logstash_port"`
-	ConfiguredAt     frameworktypes.String `tfsdk:"configured_at"`
-	ID               frameworktypes.String `tfsdk:"id"`
+	Host          frameworktypes.String `tfsdk:"host"`
+	Port          frameworktypes.Int64  `tfsdk:"port"`
+	Username      frameworktypes.String `tfsdk:"username"`
+	Password      frameworktypes.String `tfsdk:"password"`
+	AuditLogPath  frameworktypes.String `tfsdk:"audit_log_path"`
+	DatasourceTag frameworktypes.String `tfsdk:"datasource_tag"`
+	LogstashHost  frameworktypes.String `tfsdk:"logstash_host"`
+	LogstashPort  frameworktypes.String `tfsdk:"logstash_port"`
+	ConfiguredAt  frameworktypes.String `tfsdk:"configured_at"`
+	ID            frameworktypes.String `tfsdk:"id"`
 }
 
 func (r *FilebeatConfigureResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -168,8 +168,8 @@ logging.files:
 
 logging.level: debug
 logging.selectors: ["*"]
-`, data.AuditLogPath.ValueString(), data.DatasourceTag.ValueString(), 
-   data.LogstashHost.ValueString(), data.LogstashPort.ValueString())
+`, data.AuditLogPath.ValueString(), data.DatasourceTag.ValueString(),
+		data.LogstashHost.ValueString(), data.LogstashPort.ValueString())
 
 	// Execute commands to configure Filebeat
 	commands := []string{
@@ -240,4 +240,3 @@ func (r *FilebeatConfigureResource) Delete(ctx context.Context, req resource.Del
 func (r *FilebeatConfigureResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
-
