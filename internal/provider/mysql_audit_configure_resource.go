@@ -237,5 +237,3 @@ func (r *MysqlAuditConfigureResource) Delete(ctx context.Context, req resource.D
 func (r *MysqlAuditConfigureResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
-
-// Made with Bob
