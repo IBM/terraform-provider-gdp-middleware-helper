@@ -65,6 +65,9 @@ func (p *GDPMiddlewareHelperProvider) Resources(ctx context.Context) []func() re
 		NewAuroraModifyResource,
 		NewNeptuneModifyResource,
 		NewOpenSearchModifyResource,
+		NewFilebeatConfigureResource,
+		NewRsyslogConfigureResource,
+		NewMysqlAuditConfigureResource,
 	}
 }
 
