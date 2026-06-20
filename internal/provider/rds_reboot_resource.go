@@ -124,6 +124,70 @@ func (r *RDSRebootResource) Create(ctx context.Context, req resource.CreateReque
 		client = r.client
 	}
 
+	// Check if audit logging is already enabled by examining the parameter group
+	describeInstanceInput := &rds.DescribeDBInstancesInput{
+		DBInstanceIdentifier: aws.String(data.DBInstanceIdentifier.ValueString()),
+	}
+
+	instanceOutput, err := client.DescribeDBInstances(ctx, describeInstanceInput)
+	if err != nil {
+		resp.Diagnostics.AddError("Error describing RDS instance", fmt.Sprintf("Could not describe RDS instance: %s", err))
+		return
+	}
+
+	if len(instanceOutput.DBInstances) > 0 {
+		instance := instanceOutput.DBInstances[0]
+		
+		// Get parameter group names (could be multiple)
+		var parameterGroupNames []string
+		for _, pg := range instance.DBParameterGroups {
+			if pg.DBParameterGroupName != nil {
+				parameterGroupNames = append(parameterGroupNames, *pg.DBParameterGroupName)
+			}
+		}
+
+		if len(parameterGroupNames) > 0 {
+			tflog.Debug(ctx, fmt.Sprintf("Checking parameter groups %v for audit logging status", parameterGroupNames))
+			
+			// Check the first parameter group (typically there's only one)
+			describeParamsInput := &rds.DescribeDBParametersInput{
+				DBParameterGroupName: aws.String(parameterGroupNames[0]),
+			}
+
+			paramsOutput, err := client.DescribeDBParameters(ctx, describeParamsInput)
+			if err != nil {
+				tflog.Warn(ctx, fmt.Sprintf("Could not describe DB parameters: %s. Proceeding with reboot.", err))
+			} else {
+				// Check if shared_preload_libraries contains pgaudit
+				auditEnabled := false
+				for _, param := range paramsOutput.Parameters {
+					if aws.ToString(param.ParameterName) == "shared_preload_libraries" {
+						paramValue := aws.ToString(param.ParameterValue)
+						if paramValue != "" && (paramValue == "pgaudit" ||
+							// Check if pgaudit is in a comma-separated list
+							containsSubstring(paramValue, "pgaudit")) {
+							auditEnabled = true
+							tflog.Info(ctx, fmt.Sprintf("Audit logging is already enabled (shared_preload_libraries contains pgaudit: %s)", paramValue))
+						}
+						break
+					}
+				}
+
+				if auditEnabled {
+					tflog.Info(ctx, "Skipping reboot as audit logging is already enabled")
+					// Set computed values without rebooting
+					currentTime := time.Now().Format(time.RFC3339)
+					data.LastRebootTime = types.StringValue(currentTime)
+					data.ID = types.StringValue(data.DBInstanceIdentifier.ValueString())
+					
+					// Save data into Terraform state
+					resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+					return
+				}
+			}
+		}
+	}
+
 	// Prepare reboot input
 	input := &rds.RebootDBInstanceInput{
 		DBInstanceIdentifier: aws.String(data.DBInstanceIdentifier.ValueString()),
@@ -140,7 +204,7 @@ func (r *RDSRebootResource) Create(ctx context.Context, req resource.CreateReque
 	})
 
 	// Reboot the RDS instance
-	_, err := client.RebootDBInstance(ctx, input)
+	_, err = client.RebootDBInstance(ctx, input)
 	if err != nil {
 		resp.Diagnostics.AddError("Error rebooting RDS instance", fmt.Sprintf("Could not reboot RDS instance: %s", err))
 		return
@@ -231,6 +295,69 @@ func (r *RDSRebootResource) Update(ctx context.Context, req resource.UpdateReque
 		client = r.client
 	}
 
+	// Check if audit logging is already enabled by examining the parameter group
+	describeInstanceInput := &rds.DescribeDBInstancesInput{
+		DBInstanceIdentifier: aws.String(data.DBInstanceIdentifier.ValueString()),
+	}
+
+	instanceOutput, err := client.DescribeDBInstances(ctx, describeInstanceInput)
+	if err != nil {
+		resp.Diagnostics.AddError("Error describing RDS instance", fmt.Sprintf("Could not describe RDS instance: %s", err))
+		return
+	}
+
+	if len(instanceOutput.DBInstances) > 0 {
+		instance := instanceOutput.DBInstances[0]
+		
+		// Get parameter group names (could be multiple)
+		var parameterGroupNames []string
+		for _, pg := range instance.DBParameterGroups {
+			if pg.DBParameterGroupName != nil {
+				parameterGroupNames = append(parameterGroupNames, *pg.DBParameterGroupName)
+			}
+		}
+
+		if len(parameterGroupNames) > 0 {
+			tflog.Debug(ctx, fmt.Sprintf("Checking parameter groups %v for audit logging status", parameterGroupNames))
+			
+			// Check the first parameter group (typically there's only one)
+			describeParamsInput := &rds.DescribeDBParametersInput{
+				DBParameterGroupName: aws.String(parameterGroupNames[0]),
+			}
+
+			paramsOutput, err := client.DescribeDBParameters(ctx, describeParamsInput)
+			if err != nil {
+				tflog.Warn(ctx, fmt.Sprintf("Could not describe DB parameters: %s. Proceeding with reboot.", err))
+			} else {
+				// Check if shared_preload_libraries contains pgaudit
+				auditEnabled := false
+				for _, param := range paramsOutput.Parameters {
+					if aws.ToString(param.ParameterName) == "shared_preload_libraries" {
+						paramValue := aws.ToString(param.ParameterValue)
+						if paramValue != "" && (paramValue == "pgaudit" ||
+							// Check if pgaudit is in a comma-separated list
+							containsSubstring(paramValue, "pgaudit")) {
+							auditEnabled = true
+							tflog.Info(ctx, fmt.Sprintf("Audit logging is already enabled (shared_preload_libraries contains pgaudit: %s)", paramValue))
+						}
+						break
+					}
+				}
+
+				if auditEnabled {
+					tflog.Info(ctx, "Skipping reboot as audit logging is already enabled")
+					// Set computed values without rebooting
+					currentTime := time.Now().Format(time.RFC3339)
+					data.LastRebootTime = types.StringValue(currentTime)
+					
+					// Save data into Terraform state
+					resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+					return
+				}
+			}
+		}
+	}
+
 	// Prepare reboot input
 	input := &rds.RebootDBInstanceInput{
 		DBInstanceIdentifier: aws.String(data.DBInstanceIdentifier.ValueString()),
@@ -247,7 +374,7 @@ func (r *RDSRebootResource) Update(ctx context.Context, req resource.UpdateReque
 	})
 
 	// Reboot the RDS instance
-	_, err := client.RebootDBInstance(ctx, input)
+	_, err = client.RebootDBInstance(ctx, input)
 	if err != nil {
 		resp.Diagnostics.AddError("Error rebooting RDS instance", fmt.Sprintf("Could not reboot RDS instance: %s", err))
 		return
@@ -281,4 +408,13 @@ func (r *RDSRebootResource) Delete(ctx context.Context, req resource.DeleteReque
 
 func (r *RDSRebootResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("db_instance_identifier"), req, resp)
+}
+
+// Helper function to check if a string contains a substring
+func containsSubstring(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr ||
+		// Check if it's in a comma-separated list
+		(len(s) > len(substr) && (s[:len(substr)+1] == substr+"," ||
+		s[len(s)-len(substr)-1:] == ","+substr ||
+		len(s) > len(substr)+2 && (s[1:len(substr)+2] == substr+"," || s[len(s)-len(substr)-2:len(s)-1] == ","+substr))))
 }

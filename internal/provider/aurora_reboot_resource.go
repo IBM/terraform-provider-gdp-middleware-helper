@@ -142,6 +142,48 @@ func (r *AuroraRebootResource) Create(ctx context.Context, req resource.CreateRe
 
 	cluster := describeResult.DBClusters[0]
 
+	// Check if audit logging is already enabled by examining the parameter group
+	parameterGroupName := aws.ToString(cluster.DBClusterParameterGroup)
+	if parameterGroupName != "" {
+		tflog.Debug(ctx, fmt.Sprintf("Checking parameter group %s for audit logging status", parameterGroupName))
+		
+		describeParamsInput := &rds.DescribeDBClusterParametersInput{
+			DBClusterParameterGroupName: aws.String(parameterGroupName),
+		}
+
+		paramsOutput, err := client.DescribeDBClusterParameters(ctx, describeParamsInput)
+		if err != nil {
+			tflog.Warn(ctx, fmt.Sprintf("Could not describe cluster parameters: %s. Proceeding with reboot.", err))
+		} else {
+			// Check if shared_preload_libraries contains pgaudit
+			auditEnabled := false
+			for _, param := range paramsOutput.Parameters {
+				if aws.ToString(param.ParameterName) == "shared_preload_libraries" {
+					paramValue := aws.ToString(param.ParameterValue)
+					if paramValue != "" && (paramValue == "pgaudit" ||
+						// Check if pgaudit is in a comma-separated list
+						contains(paramValue, "pgaudit")) {
+						auditEnabled = true
+						tflog.Info(ctx, fmt.Sprintf("Audit logging is already enabled (shared_preload_libraries contains pgaudit: %s)", paramValue))
+					}
+					break
+				}
+			}
+
+			if auditEnabled {
+				tflog.Info(ctx, "Skipping reboot as audit logging is already enabled")
+				// Set computed values without rebooting
+				currentTime := time.Now().Format(time.RFC3339)
+				data.LastRebootTime = types.StringValue(currentTime)
+				data.ID = types.StringValue(data.ClusterIdentifier.ValueString())
+				
+				// Save data into Terraform state
+				resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+				return
+			}
+		}
+	}
+
 	// Count total instances in the cluster
 	instanceCount := len(cluster.DBClusterMembers)
 
@@ -312,6 +354,47 @@ func (r *AuroraRebootResource) Update(ctx context.Context, req resource.UpdateRe
 
 	cluster := describeResult.DBClusters[0]
 
+	// Check if audit logging is already enabled by examining the parameter group
+	parameterGroupName := aws.ToString(cluster.DBClusterParameterGroup)
+	if parameterGroupName != "" {
+		tflog.Debug(ctx, fmt.Sprintf("Checking parameter group %s for audit logging status", parameterGroupName))
+		
+		describeParamsInput := &rds.DescribeDBClusterParametersInput{
+			DBClusterParameterGroupName: aws.String(parameterGroupName),
+		}
+
+		paramsOutput, err := client.DescribeDBClusterParameters(ctx, describeParamsInput)
+		if err != nil {
+			tflog.Warn(ctx, fmt.Sprintf("Could not describe cluster parameters: %s. Proceeding with reboot.", err))
+		} else {
+			// Check if shared_preload_libraries contains pgaudit
+			auditEnabled := false
+			for _, param := range paramsOutput.Parameters {
+				if aws.ToString(param.ParameterName) == "shared_preload_libraries" {
+					paramValue := aws.ToString(param.ParameterValue)
+					if paramValue != "" && (paramValue == "pgaudit" ||
+						// Check if pgaudit is in a comma-separated list
+						contains(paramValue, "pgaudit")) {
+						auditEnabled = true
+						tflog.Info(ctx, fmt.Sprintf("Audit logging is already enabled (shared_preload_libraries contains pgaudit: %s)", paramValue))
+					}
+					break
+				}
+			}
+
+			if auditEnabled {
+				tflog.Info(ctx, "Skipping reboot as audit logging is already enabled")
+				// Set computed values without rebooting
+				currentTime := time.Now().Format(time.RFC3339)
+				data.LastRebootTime = types.StringValue(currentTime)
+				
+				// Save data into Terraform state
+				resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+				return
+			}
+		}
+	}
+
 	// Count total instances in the cluster
 	instanceCount := len(cluster.DBClusterMembers)
 
@@ -407,4 +490,13 @@ func (r *AuroraRebootResource) Delete(ctx context.Context, req resource.DeleteRe
 
 func (r *AuroraRebootResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("cluster_identifier"), req, resp)
+}
+
+// Helper function to check if a string contains a substring (case-insensitive for library names)
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr ||
+		// Check if it's in a comma-separated list
+		(len(s) > len(substr) && (s[:len(substr)+1] == substr+"," ||
+		s[len(s)-len(substr)-1:] == ","+substr ||
+		len(s) > len(substr)+2 && (s[1:len(substr)+2] == substr+"," || s[len(s)-len(substr)-2:len(s)-1] == ","+substr))))
 }
