@@ -408,3 +408,4 @@ func (r *AuroraRebootResource) Delete(ctx context.Context, req resource.DeleteRe
 func (r *AuroraRebootResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("cluster_identifier"), req, resp)
 }
+

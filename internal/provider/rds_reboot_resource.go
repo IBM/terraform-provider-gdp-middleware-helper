@@ -282,3 +282,4 @@ func (r *RDSRebootResource) Delete(ctx context.Context, req resource.DeleteReque
 func (r *RDSRebootResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("db_instance_identifier"), req, resp)
 }
+
